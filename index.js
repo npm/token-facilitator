@@ -45,7 +45,7 @@ Facilitator.prototype.generate = function (data, options, cb) {
       _this.redis.expire(key, options.timeout);
     }
 
-    return cb(null, key);
+    return cb(null, token);
   });
 };
 

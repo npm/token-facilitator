@@ -49,9 +49,11 @@ describe('generating a token', function () {
     var data = 'boom';
 
     var facilitator = new Facilitator({redis: client});
-    facilitator.generate(data, function (err, key) {
+    facilitator.generate(data, function (err, token) {
       expect(err).to.not.exist();
-      expect(key).to.exist();
+      expect(token).to.exist();
+
+      var key = sha(token);
       client.get(key, function (err, data) {
         data = JSON.parse(data);
         expect(data).to.equal('boom');
@@ -67,9 +69,11 @@ describe('generating a token', function () {
     };
 
     var facilitator = new Facilitator({redis: client});
-    facilitator.generate(data, function (err, key) {
+    facilitator.generate(data, function (err, token) {
       expect(err).to.not.exist();
-      expect(key).to.exist();
+      expect(token).to.exist();
+
+      var key = sha(token);
       client.get(key, function (err, data) {
         data = JSON.parse(data);
         expect(data.token).to.exist();
@@ -85,9 +89,11 @@ describe('generating a token', function () {
     };
 
     var facilitator = new Facilitator({redis: client});
-    facilitator.generate(data, function (err, key) {
+    facilitator.generate(data, function (err, token) {
       expect(err).to.not.exist();
-      expect(key).to.exist();
+      expect(token).to.exist();
+
+      var key = sha(token);
       client.get(key, function (err, data) {
         expect(data).to.be.a.string();
         data = JSON.parse(data);
@@ -105,9 +111,10 @@ describe('generating a token', function () {
     };
 
     var facilitator = new Facilitator({redis: client});
-    facilitator.generate(data, opts, function (err, key) {
+    facilitator.generate(data, opts, function (err, token) {
       expect(err).to.not.exist();
-      expect(key).to.include('ahoy:');
+
+      var key = opts.prefix + sha(token);
       client.get(key, function (err, data) {
         data = JSON.parse(data);
         expect(data).to.equal('boom');
@@ -123,8 +130,10 @@ describe('generating a token', function () {
     };
 
     var facilitator = new Facilitator({redis: client});
-    facilitator.generate(data, opts, function (err, key) {
+    facilitator.generate(data, opts, function (err, token) {
       expect(err).to.not.exist();
+
+      var key = sha(token);
       client.ttl(key, function (err, time) {
         expect(time).to.equal(1);
         client.get(key, function (err, data) {
@@ -143,3 +152,9 @@ describe('generating a token', function () {
     });
   });
 });
+
+var crypto = require('crypto');
+
+function sha (token) {
+  return crypto.createHash('sha1').update(token).digest('hex');
+}
