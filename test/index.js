@@ -104,6 +104,26 @@ describe('generating a token', function () {
     });
   });
 
+  it('uses a predefined token if desired', function (done) {
+    var data = 'boom';
+    var opts = {
+      token: '12345'
+    };
+
+    var facilitator = new Facilitator({redis: client});
+    facilitator.generate(data, opts, function (err, token) {
+      expect(err).to.not.exist();
+
+      expect(token).to.equal(opts.token);
+      var key = sha(token);
+      client.get(key, function (err, data) {
+        data = JSON.parse(data);
+        expect(data).to.equal('boom');
+        done();
+      });
+    });
+  });
+
   it('adds a prefix to the key if desired', function (done) {
     var data = 'boom';
     var opts = {

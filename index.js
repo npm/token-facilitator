@@ -25,9 +25,10 @@ Facilitator.prototype.generate = function (data, options, cb) {
     options = null;
   }
 
-  var token = crypto.randomBytes(30).toString('base64')
-            .split('/').join('_')
-            .split('+').join('-'),
+  var token = options && options.token ||
+              crypto.randomBytes(30).toString('base64')
+                .split('/').join('_')
+                .split('+').join('-'),
       hash = sha(token),
       key = (options && options.prefix || '') + hash;
 
