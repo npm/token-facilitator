@@ -62,7 +62,7 @@ describe('generating a token', function () {
     });
   });
 
-  it('includes the token if there data is an object', function (done) {
+  it('includes the token and hash if the data is an object', function (done) {
     var data = {
       a: 'one',
       b: 'two'
@@ -77,6 +77,7 @@ describe('generating a token', function () {
       client.get(key, function (err, data) {
         data = JSON.parse(data);
         expect(data.token).to.exist();
+        expect(data.hash).to.exist();
         done();
       });
     });

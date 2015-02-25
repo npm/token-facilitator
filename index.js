@@ -33,6 +33,7 @@ Facilitator.prototype.generate = function (data, options, cb) {
       key = (options && options.prefix || '') + hash;
 
   data.token = token + '';
+  data.hash = hash + '';
 
   this.redis.set(key, JSON.stringify(data), function (err) {
 
