@@ -1,5 +1,6 @@
 var assert = require('assert'),
     crypto = require('crypto'),
+    VError = require('verror'),
     _ = require('lodash');
 
 var Facilitator = module.exports = function (opts) {
@@ -38,7 +39,7 @@ Facilitator.prototype.generate = function (data, options, cb) {
   this.redis.set(key, JSON.stringify(data), function (err) {
 
     if (err) {
-      _this.logger.error('Unable to set ' + key + ' to the cache');
+      err = new VError(err, "Unable to set '%s' to the cache", key);
       _this.logger.error(err);
       return cb(err);
     }
@@ -48,6 +49,35 @@ Facilitator.prototype.generate = function (data, options, cb) {
     }
 
     return cb(null, token);
+  });
+};
+
+Facilitator.prototype.read = function (token, options, cb) {
+  if (typeof options === 'function') {
+    cb = options;
+    options = null;
+  }
+
+  var logger = this.logger;
+
+  var key = (options && options.prefix || '') + sha(token);
+
+  this.redis.get(key, function (err, data) {
+    if (err) {
+      err = new VError(err, "Unable to get '%s' from cache", key);
+      logger.error(err);
+      return cb(err);
+    }
+
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      err = new VError(e, "Error parsing data from %s", key);
+      logger.error(err);
+      return cb(err);
+    }
+
+    cb(null, data);
   });
 };
 
