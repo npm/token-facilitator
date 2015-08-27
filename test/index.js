@@ -139,10 +139,15 @@ describe('generating a token', function () {
       client.get(key, function (err, data) {
         data = JSON.parse(data);
         expect(data).to.equal('boom');
-        done();
+        facilitator.read(token, opts, function (err, data) {
+          expect(err).to.not.exist();
+          expect(data).to.equal('boom');
+          done();
+        });
       });
     });
   });
+
 
   it('adds a timeout to the key if desired', function (done) {
     var data = 'boom';
