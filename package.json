@@ -1,6 +1,6 @@
 {
   "name": "token-facilitator",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "generates tokens and stores them with relevant data in redis",
   "main": "index.js",
   "scripts": {
