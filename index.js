@@ -1,86 +1,109 @@
-var assert = require('assert'),
-    crypto = require('crypto'),
-    VError = require('verror'),
-    _ = require('lodash');
+'use strict';
 
-var Facilitator = module.exports = function (opts) {
-  _.extend(this, {}, opts);
+var crypto = require('crypto');
+var Promise = require('bluebird');
+var VError = require('verror');
 
-  assert(this.redis, 'we require a redis instance');
+var Facilitator;
 
-  if (!this.logger) {
+module.exports = Facilitator = function (options) {
+  Object.assign(this, options);
+
+  if (! this.redis) {
+    throw new VError('A Redis instance (i.e., `options.redis`) is required!');
+  }
+
+  if (! this.logger) {
     this.logger = {
       error: console.error,
       info: console.log
     };
   }
-
-  return this;
 };
 
-Facilitator.prototype.generate = function (data, options, cb) {
-  var _this = this;
+Facilitator.prototype.generate = function (data, options) {
+  var _this;
 
-  if (typeof options === 'function') {
-    cb = options;
-    options = null;
-  }
+  _this = this;
 
-  var token = options && options.token ||
-              crypto.randomBytes(30).toString('base64')
-                .split('/').join('_')
-                .split('+').join('-'),
-      hash = sha(token),
-      key = (options && options.prefix || '') + hash;
+  return new Promise(function (resolve, reject) {
+    var hash;
+    var key;
+    var token;
 
-  data.token = token + '';
-  data.hash = hash + '';
+    token = (options && options.token) ? options.token :
+      crypto.randomBytes(30).toString('base64')
+        .split('/').join('_')
+        .split('+').join('-');
+    hash = sha(token);
+    key = (options && options.prefix) ? (options.prefix + hash) : ('' + hash);
 
-  this.redis.set(key, JSON.stringify(data), function (err) {
-
-    if (err) {
-      err = new VError(err, "Unable to set '%s' to the cache", key);
-      _this.logger.error(err);
-      return cb(err);
+    if (typeof data !== 'string') {
+      data.hash = hash + '';
+      data.token = token + '';
     }
 
-    if (options && options.timeout) {
-      _this.redis.expire(key, options.timeout);
-    }
+    _this.redis.set(key, JSON.stringify(data), function (error) {
+      if (error) {
+        error = new VError(error, 'Unable to set "%s" to the cache.', key);
 
-    return cb(null, token);
+        _this.logger.error(error);
+
+        reject(error);
+
+        return;
+      }
+
+      if (options && options.timeout) {
+        _this.redis.expire(key, options.timeout);
+      }
+
+      resolve(token);
+    });
   });
 };
 
-Facilitator.prototype.read = function (token, options, cb) {
-  if (typeof options === 'function') {
-    cb = options;
-    options = null;
-  }
+Facilitator.prototype.read = function (token, options) {
+  var _this;
 
-  var logger = this.logger;
+  _this = this;
 
-  var key = (options && options.prefix || '') + sha(token);
+  return new Promise(function (resolve, reject) {
+    var key;
 
-  this.redis.get(key, function (err, data) {
-    if (err) {
-      err = new VError(err, "Unable to get '%s' from cache", key);
-      logger.error(err);
-      return cb(err);
-    }
+    key = (options && options.prefix) ?
+      (options.prefix + sha(token)) :
+      ('' + sha(token));
 
-    try {
-      data = JSON.parse(data);
-    } catch (e) {
-      err = new VError(e, "Error parsing data from %s", key);
-      logger.error(err);
-      return cb(err);
-    }
+    _this.redis.get(key, function (error, data) {
+      if (error) {
+        error = new VError(error, 'Unable to get "%s" from the cache.', key);
 
-    cb(null, data);
+        _this.logger.error(error);
+
+        reject(error);
+
+        return;
+      }
+
+      try {
+        data = JSON.parse(data);
+      } catch (e) {
+        error = new VError(e, 'Error parsing data from "%s".', key);
+
+        _this.logger.error(error);
+
+        reject(error);
+
+        return;
+      }
+
+      resolve(data);
+    });
   });
 };
 
 function sha (token) {
-  return crypto.createHash('sha1').update(token).digest('hex');
+  return crypto.createHash('sha1')
+    .update(token).digest('hex');
 }
