@@ -11,15 +11,19 @@ var data = {
 };
 
 var facilitator = new Facilitator({redis: client});
-facilitator.generate(data, function (err, key) {
-  client.get(key, function (err, data) {
-    expect(data).to.be.a.string();
-    data = JSON.parse(data);
-    expect(data.a).to.equal('one');
-    expect(data.b).to.equal('two');
-    done();
+facilitator.generate(data)
+  .then(function (token) {
+    expect(token).to.exist();
+
+    var key = sha(token);
+    client.get(key, function (err, data) {
+      expect(data).to.be.a.string();
+      data = JSON.parse(data);
+      expect(data.a).to.equal('one');
+      expect(data.b).to.equal('two');
+      done();
+    });
   });
-});
 ```
 
 You can also set some options! Right now, our options include `timeout` and `prefix`:
@@ -30,9 +34,11 @@ var opts = {
   prefix: 'something:' // don't forget that separator!
 };
 
-facilitator.generate(data, opts, function (err, key) {
-  // now the key has a prefix of `something:` and will live for 10 seconds :-)
-}
+facilitator.generate(data, opts)
+  .catch(function (err) { /* ... */ })
+  .then(function (key) {
+    // now the key has a prefix of `something:` and will live for 10 seconds :-)
+  });
 
 ```
 
