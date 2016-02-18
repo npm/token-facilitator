@@ -9,24 +9,8 @@ var Code = require('code'),
 
 var Facilitator = require('../.');
 
-var redis = require('redis'),
-    spawn = require('child_process').spawn,
-    client;
-
-var redisProcess;
-
-before(function (done) {
-  var redisConfig = '--port ' + 6379;
-  redisProcess = spawn('redis-server', [redisConfig]);
-
-  client = redis.createClient(6379, '127.0.0.1');
-  done();
-});
-
-after(function(done) {
-  redisProcess.kill('SIGKILL');
-  done();
-});
+var redis = require('redis-mock'),
+    client = redis.createClient();
 
 describe('Instantiating a facilitator', function () {
   it('errors out if there is no redis option', function (done) {
