@@ -43,23 +43,21 @@ Facilitator.prototype.generate = function (data, options) {
       data.token = token + '';
     }
 
-    _this.redis.set(key, JSON.stringify(data), function (error) {
-      if (error) {
-        error = new VError(error, 'Unable to set "%s" to the cache.', key);
-
-        _this.logger.error(error);
-
-        reject(error);
-
-        return;
+    function onset(err) {
+      if (err) {
+        err = new VError(err, "Unable to set '%s' to the cache", key);
+        _this.logger.error(err);
+        return reject(err);
       }
 
-      if (options && options.timeout) {
-        _this.redis.expire(key, options.timeout);
-      }
+      return resolve(token);
+    }
 
-      resolve(token);
-    });
+    if (options && options.timeout) {
+      _this.redis.setex(key, options.timeout, JSON.stringify(data), onset);
+    } else {
+      _this.redis.set(key, JSON.stringify(data), onset);
+    }
   });
 };
 
